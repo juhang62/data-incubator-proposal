@@ -1,3 +1,4 @@
+# fit a probit factor model  
 scotch <- read.csv("scotch.csv")
 subdat=subset(scotch,select = - Other.Brands)
 oneto20=seq(1,20)
@@ -10,7 +11,6 @@ Y=as.numeric(Y)
 
 
 ## function to update beta
-
 update_beta <- function(X,Y,sigma,v = 1/100,beta0 = 0){
 V0inv = diag(v,ncol(X),ncol(X))
 a = 0.1; b = 0.1
@@ -39,19 +39,17 @@ mc = 1000
 
 Bsave = array(0,c(p,k,mc))
 mus = array(0,c(p,mc))
-#Psis = array(0,c(p,mc))
 for (j in 1:(k-1)){
   B[j,(j+1):k] = 0
 }
 for (iter in 1:mc){
-  
   for (j in 1:p){
     ind = 1:min(j,k)
     temp = update_beta(t(rbind(rep(1,n),f[ind,])),z[j,],1)
     B[j,ind] = temp[2:length(temp)]
     mu[j] = temp[1]
-    }
-
+  }
+  
   Ytemp = diag(1,p,p)%*%(z - mu)
   Xtemp = diag(1,p,p)%*%B
   
@@ -59,14 +57,6 @@ for (iter in 1:mc){
     f[,i] = update_beta(Xtemp,Ytemp[,i],1,v = 1)
   }
   
-  
-  # # update idiosyncratic variances, AKA Psi
-  # a<-b<-1
-  # eps = X - mu - B%*%f
-  # SSE = rowSums(eps^2)
-  # Psi = 1/rgamma(p,(a+n)/2,(SSE+b)/2)
-  
-  # #update z
   mutemp = B%*%f+mu
   a = rep(0,n*p)
   b = rep(1,n*p)
@@ -75,19 +65,13 @@ for (iter in 1:mc){
   u = runif(n*p,a,b)
   z = qnorm(u,mutemp,1)
   z = matrix(z,p,n)
-  # z=Z
-  
-  
   Bsave[,,iter] = B
   mus[,iter] = mu
 }
 
-#Bmean = as.numeric(apply(Bsave,c(1,2),mean))
-# plot(as.numeric(Btrue),Bmean,pch=20)
-# abline(0,-1,col='red')
 Bmean = as.numeric(apply(Bsave[,,seq(200,mc)],c(1,2),mean))
 Bmean = matrix(Bmean,p,k)
 plot(Bmean[,1],Bmean[,2],pch='.')
 cname=colnames(subdat)
-text(Bmean[,1],Bmean[,2],cname)
+text(Bmean[,1],Bmean[,2],cname,cex=.8)
 
